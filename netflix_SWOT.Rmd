@@ -76,6 +76,7 @@ As a believer/proponent of open science, I think it would be interesting to see 
 ```{r github}
 repos = gh("/users/Netflix/repos", .limit = Inf) # retrieving all Netflix repos
 
+# creating a data frame with some interesting variables
 ghSummary = data.frame(
   repo = sapply(repos, "[[", "name") %>% as.character(),
   description = sapply(repos, "[[", "description") %>% as.character(),
@@ -92,11 +93,12 @@ ghSummary = data.frame(
 ### Languages {-}
 The [Netflix GitHub Repo](https://github.com/Netflix) contains `r nrow(ghSummary)` repositories. In the code chunk below, I have aggregated the programming languages used in each individual repo.
 ```{r gitLanguages}
+# creating a horizontal bar plot of repo programming languages
 ggplot(data = ghSummary, aes(x=reorder(language, language, length))) + 
   geom_bar(fill="#E50914") + theme_minimal() + coord_flip() +
   labs(x = "Programming Language", y = "Number of Public GitHub Repositories",
        caption = "By: Fadel Megahed (GitHub: @fmegahed)")
-grid::grid.raster(logo, x = 0.07, y = 0.01, just = c('left', 'bottom'), width = unit(1, 'inches'))
+grid::grid.raster(logo, x = 0, y = 0, just = c('left', 'bottom'), width = unit(1, 'inches')) # logo
 ```
 
 From the bar chart, we can see that Java, JavaScript, Python and Go are by far the most commonly used programming languages on all the public repositories available at the [Netflix GitHub Repo](https://github.com/Netflix). 
@@ -104,12 +106,15 @@ From the bar chart, we can see that Java, JavaScript, Python and Go are by far t
 ### Creation Year {-}
 Below, I aggregated the number of created repositories on GitHub per year. 
 ```{r years}
-ghSummary$createYear = year(ghSummary$createDate)
+ghSummary$createYear = year(ghSummary$createDate) # extracting year from date
+
+# creating a vertical bar chart for years 
+#(Typically, I would have created a line chart, but wanted to emphasize the Netflix theme color more)
 ggplot(data = ghSummary, aes(x=as.character(createYear))) + 
   geom_bar(fill="#E50914") + theme_minimal() + 
     labs(x = "Repository Creation Year", y = "Number of Public Repositories",
        caption = "By: Fadel Megahed (GitHub: @fmegahed)")
-grid::grid.raster(logo, x = 0.07, y = 0.01, just = c('left', 'bottom'), width = unit(1, 'inches'))
+grid::grid.raster(logo, x = 0, y = 0, just = c('left', 'bottom'), width = unit(1, 'inches')) # logo
 ```
 
 From the visualization, we can see that between 2013 and 2019 the number of repositories varied between `r table(ghSummary$createYear)[7]` and `r table(ghSummary$createYear)[5]`.
@@ -117,13 +122,18 @@ From the visualization, we can see that between 2013 and 2019 the number of repo
 ### Languages x Year {-}
 
 ```{r languagesYear}
-df = ghSummary %>% filter(language%in% c("Java", "JavaScript", "Python", "Go", "Ruby", "HTML")) %>% group_by(language, createYear) %>% count()
+df = ghSummary %>%
+  filter(language%in% c("Java", "JavaScript", "Python", "Go", "Ruby", "HTML")) %>% # main languages
+  group_by(language, createYear) %>% # grouping by language and year created
+  count() # counting --> result is a data frame with three columns (two grouping cols + count)
+
+# creating a line graph; I am using the D3.js color scheme for coloring the languages
 ggplot(data = df, aes(x=createYear, y = n, color = language)) + geom_line() +
   scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
-  scale_colour_d3() + theme_minimal() + 
+  scale_colour_d3() + theme_minimal() + theme(legend.position = "top") +
     labs(x = "Repository Creation Year", y = "Number of Public Repositories",
        caption = "By: Fadel Megahed (GitHub: @fmegahed)")
-grid::grid.raster(logo, x = 0.07, y = 0.01, just = c('left', 'bottom'), width = unit(1, 'inches'))
+grid::grid.raster(logo, x = 0, y = 0, just = c('left', 'bottom'), width = unit(1, 'inches')) # logo
 ```
 
 From the line graph, there are three interesting observations: (1) JavaScript was responsible for the sharp increase in repositories created in 2015; (2) Python's use has increased steadily from 2015; and (3) Java seems to be the most pushed language if we were to ignore 2015. Thus, if the private repositories were to mimic the public ones, one would expect that strong Java Skills would be expected of most software engineers/developers at Netflix.
@@ -131,6 +141,12 @@ From the line graph, there are three interesting observations: (1) JavaScript wa
 ### Individual Repos {-}
 The [Netflix GitHub Repo](https://github.com/Netflix) contains `r nrow(ghSummary)` repositories. In the code chunk below, I provide a general summary of each repo. You can arrange the repositories by interacting with the keys and/or searching the "search bar".
 ```{r gitSummary}
-ghSummary %>% arrange( desc(watchers) ) %>% datatable()
+ghSummary %>% 
+  arrange( desc(watchers) ) %>% # in descending order by number of watchers
+  select(-c(createYear, private, pushDate)) %>%  # removing createYear, private (all public), push Date
+  select(repo, sort(names(.))) %>% # placing repo as first column and then cols in alphabetic order
+  datatable(rownames = FALSE, filter = 'top', # no rownames and adding column filters
+            options = list(autowidth = TRUE, pageLength = 10) ) # print table with 10 rows per page
 ```
 
+To answer your own questions, you are encouraged to "play" with the column filters. For example, it is interesting to see that all Python repos were updated in 2020, but not all JavaScript repos were updated in 2020.
