@@ -98,6 +98,7 @@ ggplot(data = ghSummary, aes(x=reorder(language, language, length))) +
        caption = "By: Fadel Megahed (GitHub: @fmegahed)")
 grid::grid.raster(logo, x = 0.07, y = 0.01, just = c('left', 'bottom'), width = unit(1, 'inches'))
 ```
+
 From the bar chart, we can see that Java, JavaScript, Python and Go are by far the most commonly used programming languages on all the public repositories available at the [Netflix GitHub Repo](https://github.com/Netflix). 
 
 ### Creation Year {-}
@@ -110,6 +111,7 @@ ggplot(data = ghSummary, aes(x=as.character(createYear))) +
        caption = "By: Fadel Megahed (GitHub: @fmegahed)")
 grid::grid.raster(logo, x = 0.07, y = 0.01, just = c('left', 'bottom'), width = unit(1, 'inches'))
 ```
+
 From the visualization, we can see that between 2013 and 2019 the number of repositories varied between `r table(ghSummary$createYear)[7]` and `r table(ghSummary$createYear)[5]`.
 
 ### Languages x Year {-}
@@ -123,6 +125,7 @@ ggplot(data = df, aes(x=createYear, y = n, color = language)) + geom_line() +
        caption = "By: Fadel Megahed (GitHub: @fmegahed)")
 grid::grid.raster(logo, x = 0.07, y = 0.01, just = c('left', 'bottom'), width = unit(1, 'inches'))
 ```
+
 From the line graph, there are three interesting observations: (1) JavaScript was responsible for the sharp increase in repositories created in 2015; (2) Python's use has increased steadily from 2015; and (3) Java seems to be the most pushed language if we were to ignore 2015. Thus, if the private repositories were to mimic the public ones, one would expect that strong Java Skills would be expected of most software engineers/developers at Netflix.
 
 ### Individual Repos {-}
