@@ -1,0 +1,2 @@
+# netflix
+ This repository is used to analyze publically available data on NetFlix. It is meant to provide prospective Netflix hires with some additional information about the company. Note that this can be easily extended to any other Tech company and that I do not claim whether this information can help prospective candidates with an improved chances in passing through the interview process (given that I do not work for tech companies/Netflix). 

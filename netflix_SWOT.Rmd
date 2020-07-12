@@ -1,0 +1,133 @@
+---
+title: "Netflix SWOT Analysis from Publically Available Datasets"
+author: "Fadel M. Megahed ^[Email: fmegahed@miamioh.edu | Phone: +1-513-529-4185 | Website: <a href=\"https://miamioh.edu/fsb/directory/?up=/directory/megahefm\">Miami University Official</a>]"
+bibliography: netflix.bib
+csl: apa.csl
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+output: 
+  html_document:
+    toc: TRUE
+    toc_float: TRUE
+    number_sections: TRUE
+    theme: simplex
+    paged_df: TRUE
+    code_folding: show
+  includes:
+    in_header: structure.tex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      cache = TRUE,
+                      progress = FALSE, 
+                      verbose = FALSE,
+                      dpi = 600)
+options(qwraps2_markup = "markdown")
+```
+
+In this [R Markdown document](https://rmarkdown.rstudio.com/), I am extracting publicly available data on Netflix. My goal is to provide with those interested in joining Netflix in a *data Science* or *software engineering* role with some insights about the company. The analysis should provide interested candidates with some additional information that they may not have been able to easily grasp and aggregate from ''Googling'' the company.
+
+While I prefer to use **R** for my data science projects, I do understand that a relatively large number of *sofware engineers* may not have any experience with the **R** programming language. Therefore, I provide some detailed instructions on installing **R** for the purposes of rerunning my analysis and/or applying it to a different company, with the hope of saving you some time from searching for some of that information on Google or stackoverflow.  
+
+# R Setup and Required Packages
+In this project, the open-source R programming language is used. R is maintained by an international team of developers who make the language available at [The Comprehensive R Archive Network](https://cran.r-project.org/). Readers interested in reusing our code and reproducing our results should have R installed locally on their machines. R can be installed on a number of different operating systems (see [Windows](https://cran.r-project.org/bin/windows/), [Mac](https://cran.r-project.org/bin/macosx/), and [Linux](https://cran.r-project.org/bin/linux/) for the installation instructions for these systems). We also recommend using the RStudio interface for R. The reader can [download RStudio](http://www.rstudio.com/ide) for free by following the instructions at the link. For non-R users, we recommend the [Hands-on Programming with R](https://rstudio-education.github.io/hopr/packages.html) for a brief overview of the software's functionality. Hereafter, we assume that the reader has an introductory understanding of the R programming language.
+
+In the code chunk below, we load the packages used to support our analysis.
+
+```{r logo, cache=F, include=FALSE}
+# Netflix Logo: Put in a separate chunk since we cannot cache image pointers
+logo = magick::image_read("Netflix_Logo_RGB.png")
+```
+
+```{r packages}
+if(require(checkpoint)==FALSE) install.packages("checkpoint") # check to see if checkpoint is installed; if not, install it
+library(checkpoint) # package used to facilitate the reproducibility of our work
+
+# a checkpoint of R packages on CRAN on July 10, 2020 to enable the reproduction of our work in the future
+checkpoint("2020-07-10")
+
+# check if packages are not installed; if yes, install missing packages
+packages = c("tidyverse", "magrittr", # typical data analysis packages
+             "devtools", # used to install a package from GitHub
+             "rvest", # used for web scraping
+             "gh", # package to extract relevant GitHub information
+             "DT", # for printing nice looking data in R Markdown
+             "magick", "grid", # for reading netflix logo and branding the plots
+             "ggsci", # for color selection with ggplot
+             "lubridate") # package for ts analysis
+newPackages = packages[!(packages %in% installed.packages()[,"Package"])]
+if(length(newPackages) > 0) install.packages(newPackages)
+
+# using the library command to load all packages; invisible used to avoid printing all packages and dependencies used
+invisible(lapply(packages, library, character.only = TRUE))
+
+set.seed(2020)
+sInfo = sessionInfo()
+```
+
+# Scraping Publically Available Data
+
+
+## GitHub Repos {.tabset .tabset-fade .tabset-pills}
+As a believer/proponent of open science, I think it would be interesting to see how many public repositories are made available by Netflix on GitHub. Therefore, I perform a quick analysis of the [Netflix GitHub Repositories](https://github.com/Netflix) below with the goals of attempting to understand the number of repositories, how often they are updated and what open issues that exist. Note that my analysis makes use of the: [gh](https://cran.r-project.org/web/packages/gh/gh.pdf) package and the outstanding [repository of Jenny Bryan](https://github.com/jennybc/analyze-github-stuff-with-r) documenting how the package can be utilized through several use cases. 
+
+```{r github}
+repos = gh("/users/Netflix/repos", .limit = Inf) # retrieving all Netflix repos
+
+ghSummary = data.frame(
+  repo = sapply(repos, "[[", "name") %>% as.character(),
+  description = sapply(repos, "[[", "description") %>% as.character(),
+  private = sapply(repos, "[[", "private") %>% as.character(),
+  language = sapply(repos, "[[", "language") %>% as.character(),
+  createDate = sapply(repos, "[[", "created_at") %>% as.Date(),
+  updateDate =  sapply(repos, "[[", "updated_at") %>% as.Date(),
+  pushDate =  sapply(repos, "[[", "pushed_at") %>% as.Date(),
+  openIssues = sapply(repos, "[[", "open_issues_count") %>% as.integer(),
+  watchers = sapply(repos, "[[", "watchers") %>% as.integer()
+)
+```
+
+### Languages {-}
+The [Netflix GitHub Repo](https://github.com/Netflix) contains `r nrow(ghSummary)` repositories. In the code chunk below, I have aggregated the programming languages used in each individual repo.
+```{r gitLanguages}
+ggplot(data = ghSummary, aes(x=reorder(language, language, length))) + 
+  geom_bar(fill="#E50914") + theme_minimal() + coord_flip() +
+  labs(x = "Programming Language", y = "Number of Public GitHub Repositories",
+       caption = "By: Fadel Megahed (GitHub: @fmegahed)")
+grid::grid.raster(logo, x = 0.07, y = 0.01, just = c('left', 'bottom'), width = unit(1, 'inches'))
+```
+From the bar chart, we can see that Java, JavaScript, Python and Go are by far the most commonly used programming languages on all the public repositories available at the [Netflix GitHub Repo](https://github.com/Netflix). 
+
+### Creation Year {-}
+Below, I aggregated the number of created repositories on GitHub per year. 
+```{r years}
+ghSummary$createYear = year(ghSummary$createDate)
+ggplot(data = ghSummary, aes(x=as.character(createYear))) + 
+  geom_bar(fill="#E50914") + theme_minimal() + 
+    labs(x = "Repository Creation Year", y = "Number of Public Repositories",
+       caption = "By: Fadel Megahed (GitHub: @fmegahed)")
+grid::grid.raster(logo, x = 0.07, y = 0.01, just = c('left', 'bottom'), width = unit(1, 'inches'))
+```
+From the visualization, we can see that between 2013 and 2019 the number of repositories varied between `r table(ghSummary$createYear)[7]` and `r table(ghSummary$createYear)[5]`.
+
+### Languages x Year {-}
+
+```{r languagesYear}
+df = ghSummary %>% filter(language%in% c("Java", "JavaScript", "Python", "Go", "Ruby", "HTML")) %>% group_by(language, createYear) %>% count()
+ggplot(data = df, aes(x=createYear, y = n, color = language)) + geom_line() +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  scale_colour_d3() + theme_minimal() + 
+    labs(x = "Repository Creation Year", y = "Number of Public Repositories",
+       caption = "By: Fadel Megahed (GitHub: @fmegahed)")
+grid::grid.raster(logo, x = 0.07, y = 0.01, just = c('left', 'bottom'), width = unit(1, 'inches'))
+```
+From the line graph, there are three interesting observations: (1) JavaScript was responsible for the sharp increase in repositories created in 2015; (2) Python's use has increased steadily from 2015; and (3) Java seems to be the most pushed language if we were to ignore 2015. Thus, if the private repositories were to mimic the public ones, one would expect that strong Java Skills would be expected of most software engineers/developers at Netflix.
+
+### Individual Repos {-}
+The [Netflix GitHub Repo](https://github.com/Netflix) contains `r nrow(ghSummary)` repositories. In the code chunk below, I provide a general summary of each repo. You can arrange the repositories by interacting with the keys and/or searching the "search bar".
+```{r gitSummary}
+ghSummary %>% arrange( desc(watchers) ) %>% datatable()
+```
+
